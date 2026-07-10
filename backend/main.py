@@ -41,6 +41,31 @@ class DraftRequest(BaseModel):
     organization_profile: str = ""
     user_email: str = "guest@dotrus.ai"
 
+class BudgetRequest(BaseModel):
+    rfp_text: str
+    organization_profile: str = ""
+    user_email: str = "guest@dotrus.ai"
+
+class LogframeRequest(BaseModel):
+    rfp_text: str
+    organization_profile: str = ""
+    user_email: str = "guest@dotrus.ai"
+
+class ReviewRequest(BaseModel):
+    proposal_text: str
+    rfp_text: str = ""
+    user_email: str = "guest@dotrus.ai"
+
+class EligibilityRequest(BaseModel):
+    rfp_text: str
+    organization_profile: str = ""
+    user_email: str = "guest@dotrus.ai"
+
+class DonorIntelligenceRequest(BaseModel):
+    rfp_text: str
+    organization_profile: str = ""
+    user_email: str = "guest@dotrus.ai"
+
 # ===================== HELPER FUNCTION =====================
 def extract_text_from_file(file: UploadFile) -> str:
     content = file.file.read()
@@ -208,12 +233,212 @@ Return a JSON with the following structure:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ===================== NEW: Get User's Analyses =====================
+# ===================== BUDGET GENERATOR =====================
+@app.post("/api/generate-budget")
+async def generate_budget(request: BudgetRequest):
+    prompt = f"""You are an expert grant budget developer.
+
+Based on the RFP and organization profile below, generate a realistic budget breakdown.
+
+RFP:
+{request.rfp_text}
+
+Organization Profile:
+{request.organization_profile}
+
+Return a JSON with the following structure:
+{{
+  "total_budget": "...",
+  "currency": "USD",
+  "budget_lines": [
+    {{
+      "category": "...",
+      "description": "...",
+      "amount": "..."
+    }}
+  ]
+}}"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+        result = json.loads(response.choices[0].message.content)
+        return {"success": True, "budget": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ===================== LOGFRAME GENERATOR =====================
+@app.post("/api/generate-logframe")
+async def generate_logframe(request: LogframeRequest):
+    prompt = f"""You are an expert in monitoring and evaluation.
+
+Based on the RFP and organization profile below, generate a professional Logical Framework (Logframe).
+
+RFP:
+{request.rfp_text}
+
+Organization Profile:
+{request.organization_profile}
+
+Return a JSON with the following structure:
+{{
+  "goal": "...",
+  "purpose": "...",
+  "outputs": [
+    {{
+      "output": "...",
+      "indicators": "...",
+      "means_of_verification": "...",
+      "assumptions": "..."
+    }}
+  ],
+  "activities": ["..."]
+}}"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+        result = json.loads(response.choices[0].message.content)
+        return {"success": True, "logframe": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ===================== PROPOSAL REVIEWER =====================
+@app.post("/api/review-proposal")
+async def review_proposal(request: ReviewRequest):
+    prompt = f"""You are an expert proposal reviewer for Dotrus Grant AI.
+
+Review the following proposal draft and provide detailed feedback.
+
+RFP:
+{request.rfp_text}
+
+Proposal Draft:
+{request.proposal_text}
+
+Return a JSON with the following structure:
+{{
+  "overall_score": 0-100,
+  "strengths": ["..."],
+  "weaknesses": ["..."],
+  "clarity_feedback": "...",
+  "alignment_with_rfp": "...",
+  "recommendations": ["..."]
+}}"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+        result = json.loads(response.choices[0].message.content)
+        return {"success": True, "review": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ===================== ELIGIBILITY CHECKER =====================
+@app.post("/api/check-eligibility")
+async def check_eligibility(request: EligibilityRequest):
+    prompt = f"""You are an expert grant eligibility assessor.
+
+Based on the RFP and organization profile below, assess the organization's eligibility for this grant.
+
+RFP:
+{request.rfp_text}
+
+Organization Profile:
+{request.organization_profile}
+
+Return a JSON with the following structure:
+{{
+  "eligibility_score": 0-100,
+  "overall_assessment": "...",
+  "strengths": ["..."],
+  "gaps": ["..."],
+  "recommendations": ["..."],
+  "go_no_go": "Go" or "No-Go" or "Conditional"
+}}"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+        result = json.loads(response.choices[0].message.content)
+        return {"success": True, "eligibility": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ===================== DONOR INTELLIGENCE =====================
+@app.post("/api/donor-intelligence")
+async def donor_intelligence(request: DonorIntelligenceRequest):
+    prompt = f"""You are an expert in donor research and intelligence.
+
+Based on the RFP below, provide detailed donor intelligence and insights.
+
+RFP:
+{request.rfp_text}
+
+Organization Profile:
+{request.organization_profile}
+
+Return a JSON with the following structure:
+{{
+  "donor_name": "...",
+  "donor_type": "...",
+  "funding_priorities": ["..."],
+  "preferred_sectors": ["..."],
+  "average_grant_size": "...",
+  "application_tips": ["..."],
+  "past_funding_patterns": "...",
+  "success_probability": "High / Medium / Low"
+}}"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+        result = json.loads(response.choices[0].message.content)
+        return {"success": True, "donor_intelligence": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ===================== Get User's Analyses =====================
 @app.get("/api/my-analyses")
 async def get_my_analyses(email: str = Query(...)):
     try:
         response = supabase.table("user_analyses").select("*").eq("user_email", email).order("created_at", desc=True).execute()
         return {"success": True, "analyses": response.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ===================== Delete Analysis =====================
+@app.delete("/api/delete-analysis")
+async def delete_analysis(id: int = Query(...)):
+    try:
+        supabase.table("user_analyses").delete().eq("id", id).execute()
+        return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

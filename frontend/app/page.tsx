@@ -9,8 +9,11 @@ interface HistoryItem {
   result: any;
 }
 
+// ✅ Correct Railway Backend URL
+const BACKEND_URL = "https://dotrus-ai-production.up.railway.app";
+
 export default function DotrusGrantAI() {
-  const [activeTab, setActiveTab] = useState<'rfp' | 'score' | 'draft'>('rfp');
+  const [activeTab, setActiveTab] = useState<'rfp' | 'score' | 'draft' | 'budget' | 'logframe' | 'review' | 'eligibility' | 'donor'>('rfp');
   const [rfpText, setRfpText] = useState('');
   const [orgProfile, setOrgProfile] = useState('');
   const [proposalText, setProposalText] = useState('');
@@ -58,7 +61,7 @@ export default function DotrusGrantAI() {
     setStatusMessage(`Extracting text from ${file.name}...`);
 
     try {
-      const res = await fetch('http://localhost:8000/api/upload-file', {
+      const res = await fetch(`${BACKEND_URL}/api/upload-file`, {
         method: 'POST',
         body: formData
       });
@@ -97,7 +100,7 @@ export default function DotrusGrantAI() {
     setResult(null);
 
     try {
-      const res = await fetch('http://localhost:8000/api/analyze-rfp', {
+      const res = await fetch(`${BACKEND_URL}/api/analyze-rfp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -127,7 +130,7 @@ export default function DotrusGrantAI() {
     setResult(null);
 
     try {
-      const res = await fetch('http://localhost:8000/api/score-proposal', {
+      const res = await fetch(`${BACKEND_URL}/api/score-proposal`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -155,7 +158,7 @@ export default function DotrusGrantAI() {
     setResult(null);
 
     try {
-      const res = await fetch('http://localhost:8000/api/generate-draft', {
+      const res = await fetch(`${BACKEND_URL}/api/generate-draft`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -168,6 +171,146 @@ export default function DotrusGrantAI() {
       setResult(data);
       setStatusMessage("Draft generated!");
       saveToHistory('Proposal Draft', data);
+    } catch (error) {
+      alert("Error connecting to backend");
+      setStatusMessage("");
+    }
+    setLoading(false);
+  };
+
+  const generateBudget = async () => {
+    if (!rfpText.trim()) return alert("Please paste or upload RFP text first");
+
+    setLoading(true);
+    setStatusMessage("Generating budget...");
+    setResult(null);
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/generate-budget`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          rfp_text: rfpText, 
+          organization_profile: orgProfile,
+          user_email: userEmail
+        })
+      });
+      const data = await res.json();
+      setResult(data);
+      setStatusMessage("Budget generated!");
+      saveToHistory('Budget', data);
+    } catch (error) {
+      alert("Error connecting to backend");
+      setStatusMessage("");
+    }
+    setLoading(false);
+  };
+
+  const generateLogframe = async () => {
+    if (!rfpText.trim()) return alert("Please paste or upload RFP text first");
+
+    setLoading(true);
+    setStatusMessage("Generating Logframe...");
+    setResult(null);
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/generate-logframe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          rfp_text: rfpText, 
+          organization_profile: orgProfile,
+          user_email: userEmail
+        })
+      });
+      const data = await res.json();
+      setResult(data);
+      setStatusMessage("Logframe generated!");
+      saveToHistory('Logframe', data);
+    } catch (error) {
+      alert("Error connecting to backend");
+      setStatusMessage("");
+    }
+    setLoading(false);
+  };
+
+  const reviewProposal = async () => {
+    if (!proposalText.trim()) return alert("Please paste a proposal draft");
+
+    setLoading(true);
+    setStatusMessage("Reviewing proposal...");
+    setResult(null);
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/review-proposal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          proposal_text: proposalText, 
+          rfp_text: rfpText,
+          user_email: userEmail
+        })
+      });
+      const data = await res.json();
+      setResult(data);
+      setStatusMessage("Review complete!");
+      saveToHistory('Proposal Review', data);
+    } catch (error) {
+      alert("Error connecting to backend");
+      setStatusMessage("");
+    }
+    setLoading(false);
+  };
+
+  const checkEligibility = async () => {
+    if (!rfpText.trim()) return alert("Please paste or upload RFP text");
+
+    setLoading(true);
+    setStatusMessage("Checking eligibility...");
+    setResult(null);
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/check-eligibility`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          rfp_text: rfpText, 
+          organization_profile: orgProfile,
+          user_email: userEmail
+        })
+      });
+      const data = await res.json();
+      setResult(data);
+      setStatusMessage("Eligibility check complete!");
+      saveToHistory('Eligibility Check', data);
+    } catch (error) {
+      alert("Error connecting to backend");
+      setStatusMessage("");
+    }
+    setLoading(false);
+  };
+
+  const getDonorIntelligence = async () => {
+    if (!rfpText.trim()) return alert("Please paste or upload RFP text");
+
+    setLoading(true);
+    setStatusMessage("Analyzing donor...");
+    setResult(null);
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/donor-intelligence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          rfp_text: rfpText, 
+          organization_profile: orgProfile,
+          user_email: userEmail
+        })
+      });
+      const data = await res.json();
+      setResult(data);
+      setStatusMessage("Donor analysis complete!");
+      saveToHistory('Donor Intelligence', data);
     } catch (error) {
       alert("Error connecting to backend");
       setStatusMessage("");
@@ -189,10 +332,9 @@ export default function DotrusGrantAI() {
     showToast("Loaded from history");
   };
 
-  // Load analyses from Supabase
   const loadMyAnalyses = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/api/my-analyses?email=${userEmail}`);
+      const res = await fetch(`${BACKEND_URL}/api/my-analyses?email=${userEmail}`);
       const data = await res.json();
       
       if (data.success) {
@@ -204,28 +346,28 @@ export default function DotrusGrantAI() {
     }
   };
 
-  // Delete analysis from database
   const deleteAnalysis = async (id: number, index: number) => {
     if (!confirm("Are you sure you want to delete this analysis?")) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/api/delete-analysis?id=${id}`, {
+      const res = await fetch(`${BACKEND_URL}/api/delete-analysis?id=${id}`, {
         method: 'DELETE'
       });
       const data = await res.json();
 
-      if (data.success) {
-        const updated = [...savedAnalyses];
-        updated.splice(index, 1);
-        setSavedAnalyses(updated);
-        showToast("Analysis deleted");
+      if (res.ok && data.success) {
+        const updatedList = savedAnalyses.filter((_, i) => i !== index);
+        setSavedAnalyses(updatedList);
+        showToast("Analysis deleted successfully");
+      } else {
+        alert(`Delete failed: ${data.detail || 'Unknown error'}`);
       }
     } catch (error) {
-      alert("Error deleting analysis");
+      console.error("Delete error:", error);
+      alert("Failed to connect to backend.");
     }
   };
 
-  // Filtered analyses based on selected filter
   const filteredAnalyses = filterType === 'all' 
     ? savedAnalyses 
     : savedAnalyses.filter(item => item.type === filterType);
@@ -355,6 +497,26 @@ export default function DotrusGrantAI() {
             className={`px-6 py-3 rounded-t-lg font-medium transition ${activeTab === 'draft' ? 'bg-white text-black' : 'hover:bg-zinc-900 text-zinc-300'}`}>
             Generate Draft
           </button>
+          <button onClick={() => { setActiveTab('budget'); setResult(null); setStatusMessage(''); }}
+            className={`px-6 py-3 rounded-t-lg font-medium transition ${activeTab === 'budget' ? 'bg-white text-black' : 'hover:bg-zinc-900 text-zinc-300'}`}>
+            Budget Generator
+          </button>
+          <button onClick={() => { setActiveTab('logframe'); setResult(null); setStatusMessage(''); }}
+            className={`px-6 py-3 rounded-t-lg font-medium transition ${activeTab === 'logframe' ? 'bg-white text-black' : 'hover:bg-zinc-900 text-zinc-300'}`}>
+            Logframe
+          </button>
+          <button onClick={() => { setActiveTab('review'); setResult(null); setStatusMessage(''); }}
+            className={`px-6 py-3 rounded-t-lg font-medium transition ${activeTab === 'review' ? 'bg-white text-black' : 'hover:bg-zinc-900 text-zinc-300'}`}>
+            Proposal Reviewer
+          </button>
+          <button onClick={() => { setActiveTab('eligibility'); setResult(null); setStatusMessage(''); }}
+            className={`px-6 py-3 rounded-t-lg font-medium transition ${activeTab === 'eligibility' ? 'bg-white text-black' : 'hover:bg-zinc-900 text-zinc-300'}`}>
+            Eligibility Checker
+          </button>
+          <button onClick={() => { setActiveTab('donor'); setResult(null); setStatusMessage(''); }}
+            className={`px-6 py-3 rounded-t-lg font-medium transition ${activeTab === 'donor' ? 'bg-white text-black' : 'hover:bg-zinc-900 text-zinc-300'}`}>
+            Donor Intelligence
+          </button>
         </div>
 
         {/* Status / Error Message */}
@@ -478,6 +640,177 @@ export default function DotrusGrantAI() {
           </div>
         )}
 
+        {/* Budget Generator Tab */}
+        {activeTab === 'budget' && (
+          <div className="space-y-6 max-w-4xl">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium">RFP Text</label>
+                <label className="text-xs px-4 py-1.5 bg-zinc-800 rounded-lg cursor-pointer hover:bg-zinc-700 transition">
+                  Upload PDF / DOCX / TXT
+                  <input type="file" accept=".pdf,.docx,.txt" className="hidden" onChange={(e) => handleFileUpload(e, 'rfp')} />
+                </label>
+              </div>
+              <textarea value={rfpText} onChange={(e) => setRfpText(e.target.value)}
+                className="w-full h-72 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 font-mono text-sm" placeholder="Paste RFP text..." />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Organization Profile (Optional)</label>
+              <textarea value={orgProfile} onChange={(e) => setOrgProfile(e.target.value)}
+                className="w-full h-24 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-sm" placeholder="Brief description of your organization..." />
+            </div>
+
+            <div className="flex gap-4 pt-2">
+              <button onClick={generateBudget} disabled={loading}
+                className="flex-1 bg-white text-black py-4 rounded-2xl font-semibold hover:bg-zinc-200 disabled:opacity-50 transition text-lg">
+                {loading ? "Generating Budget..." : "Generate Budget"}
+              </button>
+              <button onClick={clearAll} className="px-8 py-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700">
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Logframe Tab */}
+        {activeTab === 'logframe' && (
+          <div className="space-y-6 max-w-4xl">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium">RFP Text</label>
+                <label className="text-xs px-4 py-1.5 bg-zinc-800 rounded-lg cursor-pointer hover:bg-zinc-700 transition">
+                  Upload PDF / DOCX / TXT
+                  <input type="file" accept=".pdf,.docx,.txt" className="hidden" onChange={(e) => handleFileUpload(e, 'rfp')} />
+                </label>
+              </div>
+              <textarea value={rfpText} onChange={(e) => setRfpText(e.target.value)}
+                className="w-full h-72 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 font-mono text-sm" placeholder="Paste RFP text..." />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Organization Profile (Optional)</label>
+              <textarea value={orgProfile} onChange={(e) => setOrgProfile(e.target.value)}
+                className="w-full h-24 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-sm" placeholder="Brief description of your organization..." />
+            </div>
+
+            <div className="flex gap-4 pt-2">
+              <button onClick={generateLogframe} disabled={loading}
+                className="flex-1 bg-white text-black py-4 rounded-2xl font-semibold hover:bg-zinc-200 disabled:opacity-50 transition text-lg">
+                {loading ? "Generating Logframe..." : "Generate Logframe"}
+              </button>
+              <button onClick={clearAll} className="px-8 py-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700">
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Proposal Reviewer Tab */}
+        {activeTab === 'review' && (
+          <div className="space-y-6 max-w-4xl">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium">RFP Text (Optional)</label>
+                <label className="text-xs px-4 py-1.5 bg-zinc-800 rounded-lg cursor-pointer hover:bg-zinc-700 transition">
+                  Upload PDF / DOCX / TXT
+                  <input type="file" accept=".pdf,.docx,.txt" className="hidden" onChange={(e) => handleFileUpload(e, 'rfp')} />
+                </label>
+              </div>
+              <textarea value={rfpText} onChange={(e) => setRfpText(e.target.value)}
+                className="w-full h-48 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 font-mono text-sm" placeholder="Paste RFP text (optional)..." />
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium">Proposal Draft</label>
+                <label className="text-xs px-4 py-1.5 bg-zinc-800 rounded-lg cursor-pointer hover:bg-zinc-700 transition">
+                  Upload PDF / DOCX / TXT
+                  <input type="file" accept=".pdf,.docx,.txt" className="hidden" onChange={(e) => handleFileUpload(e, 'proposal')} />
+                </label>
+              </div>
+              <textarea value={proposalText} onChange={(e) => setProposalText(e.target.value)}
+                className="w-full h-72 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 font-mono text-sm" placeholder="Paste your proposal draft here..." />
+            </div>
+
+            <div className="flex gap-4 pt-2">
+              <button onClick={reviewProposal} disabled={loading}
+                className="flex-1 bg-white text-black py-4 rounded-2xl font-semibold hover:bg-zinc-200 disabled:opacity-50 transition text-lg">
+                {loading ? "Reviewing..." : "Review Proposal"}
+              </button>
+              <button onClick={clearAll} className="px-8 py-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700">
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Eligibility Checker Tab */}
+        {activeTab === 'eligibility' && (
+          <div className="space-y-6 max-w-4xl">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium">RFP Text</label>
+                <label className="text-xs px-4 py-1.5 bg-zinc-800 rounded-lg cursor-pointer hover:bg-zinc-700 transition">
+                  Upload PDF / DOCX / TXT
+                  <input type="file" accept=".pdf,.docx,.txt" className="hidden" onChange={(e) => handleFileUpload(e, 'rfp')} />
+                </label>
+              </div>
+              <textarea value={rfpText} onChange={(e) => setRfpText(e.target.value)}
+                className="w-full h-72 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 font-mono text-sm" placeholder="Paste RFP text..." />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Organization Profile</label>
+              <textarea value={orgProfile} onChange={(e) => setOrgProfile(e.target.value)}
+                className="w-full h-48 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-sm" placeholder="Brief description of your organization..." />
+            </div>
+
+            <div className="flex gap-4 pt-2">
+              <button onClick={checkEligibility} disabled={loading}
+                className="flex-1 bg-white text-black py-4 rounded-2xl font-semibold hover:bg-zinc-200 disabled:opacity-50 transition text-lg">
+                {loading ? "Checking..." : "Check Eligibility"}
+              </button>
+              <button onClick={clearAll} className="px-8 py-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700">
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Donor Intelligence Tab */}
+        {activeTab === 'donor' && (
+          <div className="space-y-6 max-w-4xl">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium">RFP Text</label>
+                <label className="text-xs px-4 py-1.5 bg-zinc-800 rounded-lg cursor-pointer hover:bg-zinc-700 transition">
+                  Upload PDF / DOCX / TXT
+                  <input type="file" accept=".pdf,.docx,.txt" className="hidden" onChange={(e) => handleFileUpload(e, 'rfp')} />
+                </label>
+              </div>
+              <textarea value={rfpText} onChange={(e) => setRfpText(e.target.value)}
+                className="w-full h-72 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 font-mono text-sm" placeholder="Paste RFP text..." />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Organization Profile (Optional)</label>
+              <textarea value={orgProfile} onChange={(e) => setOrgProfile(e.target.value)}
+                className="w-full h-24 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-sm" placeholder="Brief description of your organization..." />
+            </div>
+
+            <div className="flex gap-4 pt-2">
+              <button onClick={getDonorIntelligence} disabled={loading}
+                className="flex-1 bg-white text-black py-4 rounded-2xl font-semibold hover:bg-zinc-200 disabled:opacity-50 transition text-lg">
+                {loading ? "Analyzing Donor..." : "Analyze Donor"}
+              </button>
+              <button onClick={clearAll} className="px-8 py-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700">
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Results */}
         {result && (
           <div className="mt-12 max-w-5xl">
@@ -492,6 +825,31 @@ export default function DotrusGrantAI() {
             {result.draft && (
               <div className="bg-zinc-800 p-7 rounded-2xl border border-zinc-700">
                 <pre className="whitespace-pre-wrap text-sm leading-relaxed">{JSON.stringify(result.draft, null, 2)}</pre>
+              </div>
+            )}
+            {result.budget && (
+              <div className="bg-zinc-800 p-7 rounded-2xl border border-zinc-700">
+                <pre className="whitespace-pre-wrap text-sm leading-relaxed">{JSON.stringify(result.budget, null, 2)}</pre>
+              </div>
+            )}
+            {result.logframe && (
+              <div className="bg-zinc-800 p-7 rounded-2xl border border-zinc-700">
+                <pre className="whitespace-pre-wrap text-sm leading-relaxed">{JSON.stringify(result.logframe, null, 2)}</pre>
+              </div>
+            )}
+            {result.review && (
+              <div className="bg-zinc-800 p-7 rounded-2xl border border-zinc-700">
+                <pre className="whitespace-pre-wrap text-sm leading-relaxed">{JSON.stringify(result.review, null, 2)}</pre>
+              </div>
+            )}
+            {result.eligibility && (
+              <div className="bg-zinc-800 p-7 rounded-2xl border border-zinc-700">
+                <pre className="whitespace-pre-wrap text-sm leading-relaxed">{JSON.stringify(result.eligibility, null, 2)}</pre>
+              </div>
+            )}
+            {result.donor_intelligence && (
+              <div className="bg-zinc-800 p-7 rounded-2xl border border-zinc-700">
+                <pre className="whitespace-pre-wrap text-sm leading-relaxed">{JSON.stringify(result.donor_intelligence, null, 2)}</pre>
               </div>
             )}
           </div>
