@@ -9,7 +9,6 @@ interface HistoryItem {
   result: any;
 }
 
-// ✅ Correct Railway Backend URL
 const BACKEND_URL = "https://dotrus-ai-production.up.railway.app";
 
 export default function DotrusGrantAI() {
@@ -73,10 +72,10 @@ export default function DotrusGrantAI() {
         setStatusMessage(`File loaded: ${file.name}`);
         showToast("File uploaded successfully");
       } else {
-        alert("Failed to extract text");
+        alert("Failed to extract text from file");
       }
     } catch (error) {
-      alert("Error uploading file");
+      alert("Error uploading file. Please try again.");
     }
     setLoading(false);
   };

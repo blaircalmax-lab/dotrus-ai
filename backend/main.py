@@ -16,19 +16,18 @@ app = FastAPI(title="Dotrus Grant AI API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# ===================== SUPABASE =====================
 SUPABASE_URL = "https://vobqgpnwtzvaztroppcs.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvYnFncG53dHp2YXp0cm9wcGNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MDY0MTYsImV4cCI6MjA5OTA4MjQxNn0.3F_ShfB0aOey60nrbtVJRKQqjTgOOcCbhUBe7LXHI-o"
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ===================== MODELS =====================
 class RFPRequest(BaseModel):
@@ -66,26 +65,34 @@ class DonorIntelligenceRequest(BaseModel):
     organization_profile: str = ""
     user_email: str = "guest@dotrus.ai"
 
-# ===================== HELPER FUNCTION =====================
+# ===================== FILE EXTRACTION =====================
 def extract_text_from_file(file: UploadFile) -> str:
     content = file.file.read()
     
-    if file.filename.endswith(".pdf"):
-        reader = PdfReader(io.BytesIO(content))
-        text = ""
-        for page in reader.pages:
-            text += page.extract_text() or ""
-        return text
+    try:
+        if file.filename.endswith(".pdf"):
+            reader = PdfReader(io.BytesIO(content))
+            text = ""
+            for page in reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+            return text.strip()
+        
+        elif file.filename.endswith(".docx"):
+            doc = Document(io.BytesIO(content))
+            return "\n".join([para.text for para in doc.paragraphs])
+        
+        elif file.filename.endswith(".txt"):
+            return content.decode("utf-8")
+        
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file type")
     
-    elif file.filename.endswith(".docx"):
-        doc = Document(io.BytesIO(content))
-        return "\n".join([para.text for para in doc.paragraphs])
-    
-    elif file.filename.endswith(".txt"):
-        return content.decode("utf-8")
-    
-    else:
-        raise HTTPException(status_code=400, detail="Unsupported file type. Use PDF, DOCX, or TXT.")
+    except Exception as e:
+        print("File extraction error:", str(e))
+        raise HTTPException(status_code=500, detail="Failed to extract text from file")
+
 
 # ===================== ENDPOINTS =====================
 
@@ -450,4 +457,5 @@ async def upload_file(file: UploadFile = File(...)):
         text = extract_text_from_file(file)
         return {"success": True, "text": text, "filename": file.filename}
     except Exception as e:
+        print("Upload error:", str(e))
         raise HTTPException(status_code=500, detail=str(e))
