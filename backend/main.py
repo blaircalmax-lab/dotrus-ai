@@ -68,7 +68,6 @@ class DonorIntelligenceRequest(BaseModel):
 # ===================== FILE EXTRACTION =====================
 def extract_text_from_file(file: UploadFile) -> str:
     content = file.file.read()
-    
     try:
         if file.filename.endswith(".pdf"):
             reader = PdfReader(io.BytesIO(content))
@@ -78,28 +77,22 @@ def extract_text_from_file(file: UploadFile) -> str:
                 if page_text:
                     text += page_text + "\n"
             return text.strip()
-        
         elif file.filename.endswith(".docx"):
             doc = Document(io.BytesIO(content))
             return "\n".join([para.text for para in doc.paragraphs])
-        
         elif file.filename.endswith(".txt"):
             return content.decode("utf-8")
-        
         else:
             raise HTTPException(status_code=400, detail="Unsupported file type")
-    
     except Exception as e:
         print("File extraction error:", str(e))
         raise HTTPException(status_code=500, detail="Failed to extract text from file")
-
 
 # ===================== ENDPOINTS =====================
 
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "Dotrus Grant AI"}
-
 
 @app.post("/api/analyze-rfp")
 async def analyze_rfp(request: RFPRequest):
@@ -129,7 +122,6 @@ Organization Profile:
             response_format={"type": "json_object"}
         )
         result = json.loads(response.choices[0].message.content)
-        
         try:
             supabase.table("user_analyses").insert({
                 "user_email": request.user_email,
@@ -139,11 +131,9 @@ Organization Profile:
             }).execute()
         except Exception as db_error:
             print("Supabase Error:", db_error)
-        
         return {"success": True, "analysis": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.post("/api/score-proposal")
 async def score_proposal(rfp_text: str = "", proposal_text: str = "", user_email: str = "guest@dotrus.ai"):
@@ -165,7 +155,6 @@ Return JSON:
   "weaknesses": [],
   "recommendations": []
 }}"""
-
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
@@ -174,7 +163,6 @@ Return JSON:
             response_format={"type": "json_object"}
         )
         result = json.loads(response.choices[0].message.content)
-        
         try:
             supabase.table("user_analyses").insert({
                 "user_email": user_email,
@@ -184,11 +172,9 @@ Return JSON:
             }).execute()
         except Exception as db_error:
             print("Supabase Error:", db_error)
-        
         return {"success": True, "scoring": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.post("/api/generate-draft")
 async def generate_draft(request: DraftRequest):
@@ -215,7 +201,6 @@ Return a JSON with the following structure:
   "sustainability": "...",
   "team": "..."
 }}"""
-
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
@@ -224,7 +209,6 @@ Return a JSON with the following structure:
             response_format={"type": "json_object"}
         )
         result = json.loads(response.choices[0].message.content)
-        
         try:
             supabase.table("user_analyses").insert({
                 "user_email": request.user_email,
@@ -234,13 +218,10 @@ Return a JSON with the following structure:
             }).execute()
         except Exception as db_error:
             print("Supabase Error:", db_error)
-        
         return {"success": True, "draft": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# ===================== BUDGET GENERATOR =====================
 @app.post("/api/generate-budget")
 async def generate_budget(request: BudgetRequest):
     prompt = f"""You are an expert grant budget developer.
@@ -265,7 +246,6 @@ Return a JSON with the following structure:
     }}
   ]
 }}"""
-
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
@@ -278,8 +258,6 @@ Return a JSON with the following structure:
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# ===================== LOGFRAME GENERATOR =====================
 @app.post("/api/generate-logframe")
 async def generate_logframe(request: LogframeRequest):
     prompt = f"""You are an expert in monitoring and evaluation.
@@ -306,7 +284,6 @@ Return a JSON with the following structure:
   ],
   "activities": ["..."]
 }}"""
-
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
@@ -319,8 +296,6 @@ Return a JSON with the following structure:
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# ===================== PROPOSAL REVIEWER =====================
 @app.post("/api/review-proposal")
 async def review_proposal(request: ReviewRequest):
     prompt = f"""You are an expert proposal reviewer for Dotrus Grant AI.
@@ -339,4 +314,110 @@ Return a JSON with the following structure:
   "strengths": ["..."],
   "weaknesses": ["..."],
   "clarity_feedback": "...",
-  "alignment_with
+  "alignment_with_rfp": "...",
+  "recommendations": ["..."]
+}}"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+        result = json.loads(response.choices[0].message.content)
+        return {"success": True, "review": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/check-eligibility")
+async def check_eligibility(request: EligibilityRequest):
+    prompt = f"""You are an expert grant eligibility assessor.
+
+Based on the RFP and organization profile below, assess the organization's eligibility for this grant.
+
+RFP:
+{request.rfp_text}
+
+Organization Profile:
+{request.organization_profile}
+
+Return a JSON with the following structure:
+{{
+  "eligibility_score": 0-100,
+  "overall_assessment": "...",
+  "strengths": ["..."],
+  "gaps": ["..."],
+  "recommendations": ["..."],
+  "go_no_go": "Go" or "No-Go" or "Conditional"
+}}"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+        result = json.loads(response.choices[0].message.content)
+        return {"success": True, "eligibility": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/donor-intelligence")
+async def donor_intelligence(request: DonorIntelligenceRequest):
+    prompt = f"""You are an expert in donor research and intelligence.
+
+Based on the RFP below, provide detailed donor intelligence and insights.
+
+RFP:
+{request.rfp_text}
+
+Organization Profile:
+{request.organization_profile}
+
+Return a JSON with the following structure:
+{{
+  "donor_name": "...",
+  "donor_type": "...",
+  "funding_priorities": ["..."],
+  "preferred_sectors": ["..."],
+  "average_grant_size": "...",
+  "application_tips": ["..."],
+  "past_funding_patterns": "...",
+  "success_probability": "High / Medium / Low"
+}}"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+        result = json.loads(response.choices[0].message.content)
+        return {"success": True, "donor_intelligence": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/my-analyses")
+async def get_my_analyses(email: str = Query(...)):
+    try:
+        response = supabase.table("user_analyses").select("*").eq("user_email", email).order("created_at", desc=True).execute()
+        return {"success": True, "analyses": response.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/delete-analysis")
+async def delete_analysis(id: int = Query(...)):
+    try:
+        supabase.table("user_analyses").delete().eq("id", id).execute()
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/upload-file")
+async def upload_file(file: UploadFile = File(...)):
+    try:
+        text = extract_text_from_file(file)
+        return {"success": True, "text": text, "filename": file.filename}
+    except Exception as e:
+        print("Upload error:", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
