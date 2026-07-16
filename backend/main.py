@@ -29,67 +29,43 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# ===================== MODELS =====================
 class RFPRequest(BaseModel):
     rfp_text: str
     organization_profile: str = ""
     user_email: str = "guest@dotrus.ai"
-
-    class Config:
-        arbitrary_types_allowed = True
 
 class DraftRequest(BaseModel):
     rfp_text: str
     organization_profile: str = ""
     user_email: str = "guest@dotrus.ai"
 
-    class Config:
-        arbitrary_types_allowed = True
-
 class BudgetRequest(BaseModel):
     rfp_text: str
     organization_profile: str = ""
     user_email: str = "guest@dotrus.ai"
-
-    class Config:
-        arbitrary_types_allowed = True
 
 class LogframeRequest(BaseModel):
     rfp_text: str
     organization_profile: str = ""
     user_email: str = "guest@dotrus.ai"
 
-    class Config:
-        arbitrary_types_allowed = True
-
 class ReviewRequest(BaseModel):
     proposal_text: str
     rfp_text: str = ""
     user_email: str = "guest@dotrus.ai"
-
-    class Config:
-        arbitrary_types_allowed = True
 
 class EligibilityRequest(BaseModel):
     rfp_text: str
     organization_profile: str = ""
     user_email: str = "guest@dotrus.ai"
 
-    class Config:
-        arbitrary_types_allowed = True
-
 class DonorIntelligenceRequest(BaseModel):
     rfp_text: str
     organization_profile: str = ""
     user_email: str = "guest@dotrus.ai"
 
-    class Config:
-        arbitrary_types_allowed = True
-
-# ===================== FILE EXTRACTION =====================
 def extract_text_from_file(file: UploadFile) -> str:
     content = file.file.read()
-    
     try:
         if file.filename.endswith(".pdf"):
             reader = PdfReader(io.BytesIO(content))
@@ -99,28 +75,20 @@ def extract_text_from_file(file: UploadFile) -> str:
                 if page_text:
                     text += page_text + "\n"
             return text.strip()
-        
         elif file.filename.endswith(".docx"):
             doc = Document(io.BytesIO(content))
             return "\n".join([para.text for para in doc.paragraphs])
-        
         elif file.filename.endswith(".txt"):
             return content.decode("utf-8")
-        
         else:
             raise HTTPException(status_code=400, detail="Unsupported file type")
-    
     except Exception as e:
         print("File extraction error:", str(e))
         raise HTTPException(status_code=500, detail="Failed to extract text from file")
 
-
-# ===================== ENDPOINTS =====================
-
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "Dotrus Grant AI"}
-
 
 @app.post("/api/analyze-rfp")
 async def analyze_rfp(request: RFPRequest):
@@ -150,7 +118,6 @@ Organization Profile:
             response_format={"type": "json_object"}
         )
         result = json.loads(response.choices[0].message.content)
-        
         try:
             supabase.table("user_analyses").insert({
                 "user_email": request.user_email,
@@ -160,11 +127,9 @@ Organization Profile:
             }).execute()
         except Exception as db_error:
             print("Supabase Error:", db_error)
-        
         return {"success": True, "analysis": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.post("/api/score-proposal")
 async def score_proposal(rfp_text: str = "", proposal_text: str = "", user_email: str = "guest@dotrus.ai"):
@@ -194,7 +159,6 @@ Return JSON:
             response_format={"type": "json_object"}
         )
         result = json.loads(response.choices[0].message.content)
-        
         try:
             supabase.table("user_analyses").insert({
                 "user_email": user_email,
@@ -204,11 +168,9 @@ Return JSON:
             }).execute()
         except Exception as db_error:
             print("Supabase Error:", db_error)
-        
         return {"success": True, "scoring": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.post("/api/generate-draft")
 async def generate_draft(request: DraftRequest):
@@ -243,7 +205,6 @@ Return a JSON with the following structure:
             response_format={"type": "json_object"}
         )
         result = json.loads(response.choices[0].message.content)
-        
         try:
             supabase.table("user_analyses").insert({
                 "user_email": request.user_email,
@@ -253,11 +214,9 @@ Return a JSON with the following structure:
             }).execute()
         except Exception as db_error:
             print("Supabase Error:", db_error)
-        
         return {"success": True, "draft": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.post("/api/generate-budget")
 async def generate_budget(request: BudgetRequest):
@@ -294,7 +253,6 @@ Return a JSON with the following structure:
         return {"success": True, "budget": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.post("/api/generate-logframe")
 async def generate_logframe(request: LogframeRequest):
@@ -334,7 +292,6 @@ Return a JSON with the following structure:
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.post("/api/review-proposal")
 async def review_proposal(request: ReviewRequest):
     prompt = f"""You are an expert proposal reviewer for Dotrus Grant AI.
@@ -368,7 +325,6 @@ Return a JSON with the following structure:
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.post("/api/check-eligibility")
 async def check_eligibility(request: EligibilityRequest):
     prompt = f"""You are an expert grant eligibility assessor.
@@ -401,7 +357,6 @@ Return a JSON with the following structure:
         return {"success": True, "eligibility": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.post("/api/donor-intelligence")
 async def donor_intelligence(request: DonorIntelligenceRequest):
@@ -438,7 +393,6 @@ Return a JSON with the following structure:
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.get("/api/my-analyses")
 async def get_my_analyses(email: str = Query(...)):
     try:
@@ -447,7 +401,6 @@ async def get_my_analyses(email: str = Query(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.delete("/api/delete-analysis")
 async def delete_analysis(id: int = Query(...)):
     try:
@@ -455,7 +408,6 @@ async def delete_analysis(id: int = Query(...)):
         return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.post("/api/upload-file")
 async def upload_file(file: UploadFile = File(...)):
