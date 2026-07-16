@@ -9,7 +9,8 @@ interface HistoryItem {
   result: any;
 }
 
-const BACKEND_URL = "https://dotrus-ai-production.up.railway.app";
+// ✅ Updated Railway Backend URL
+const BACKEND_URL = "https://hospitable-presence-production.up.railway.app";
 
 export default function DotrusGrantAI() {
   const [activeTab, setActiveTab] = useState<'rfp' | 'score' | 'draft' | 'budget' | 'logframe' | 'review' | 'eligibility' | 'donor'>('rfp');
@@ -290,7 +291,7 @@ export default function DotrusGrantAI() {
   };
 
   const getDonorIntelligence = async () => {
-    if (!rfpText.trim()) return alert("Please paste or upload RFP text");
+    if (!rfpText.trim()) return alert("Please paste or upload RFP text first");
 
     setLoading(true);
     setStatusMessage("Analyzing donor...");
