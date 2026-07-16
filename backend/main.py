@@ -29,6 +29,7 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# ===================== MODELS =====================
 class RFPRequest(BaseModel):
     rfp_text: str
     organization_profile: str = ""
@@ -64,6 +65,7 @@ class DonorIntelligenceRequest(BaseModel):
     organization_profile: str = ""
     user_email: str = "guest@dotrus.ai"
 
+# ===================== FILE EXTRACTION =====================
 def extract_text_from_file(file: UploadFile) -> str:
     content = file.file.read()
     try:
@@ -85,6 +87,8 @@ def extract_text_from_file(file: UploadFile) -> str:
     except Exception as e:
         print("File extraction error:", str(e))
         raise HTTPException(status_code=500, detail="Failed to extract text from file")
+
+# ===================== ENDPOINTS =====================
 
 @app.get("/health")
 def health():
